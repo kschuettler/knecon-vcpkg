@@ -1,0 +1,27 @@
+api = "0.8"
+
+[buildpack]
+  id = "knecon/vcpkg"
+  name = "vcpkg cmake buildpack"
+  description = "Installs vcpkg ports from json manifest"
+  version = "0.1.0"
+  keywords = ["vcpkg", "cmake", "tesseract", "leptonica"]
+
+[[targets]]
+  os = "linux"
+
+[[stacks]]
+  id = "io.buildpacks.stacks.jammy"
+
+[[stacks]]
+  id = "io.buildpacks.stacks.bionic"
+
+[[requires]]
+  name = "g++"
+  version = "6.0.0"
+
+[[requires]]
+  name = "git"
+
+[[requires]]
+  name = "unzip"

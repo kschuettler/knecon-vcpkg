@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# 1. CHECK IF APPLICABLE
+if [[ ! -f vcpkg.json ]]; then
+  echo "No vcpkg.json file found!"  
+  exit 100
+else 
+  echo "vcpkg.json found!"
+  cat vcpkg.json
+fi
+
+# 2. GET ARGS
+plan_path=$2
+
+# Check for Git
+if command -v git >/dev/null 2>&1; then
+    echo "Git found."
+else
+    echo "Git not found. This buildpack requires Git."
+    exit 1
+fi
+
+
+# Check for g++ version
+gpp_version=$(g++ --version | awk '/g\+\+/{print $NF}')
+required_version="6.0"  # Adjust this to your minimum required version
+if [ "$(printf '%s\n' "$required_version" "$gpp_version" | sort -V | head -n1)" == "$required_version" ]; then
+  echo "g++ version ${gpp_version} found ($required_version or higher required)"
+else
+    echo "g++ version $required_version or higher not found. This buildpack requires g++ >= $required_version."
+    exit 1
+fi
+# 3. DECLARE DEPENDENCIES
+cat >> "${plan_path}" <<EOL
+EOL
+

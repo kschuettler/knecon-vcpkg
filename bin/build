@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+function log() {
+  echo "-----> $*"
+}
+
+# 1. GET ARGS
+layers_dir="$1"
+env_dir="$2/env"
+plan_path="$3"
+
+
+# 2. INSTALL VCPKG
+vcpkg_url="https://github.com/microsoft/vcpkg"
+
+log "Installing vcpkg"
+
+# If it doesn't exist locally, create a vcpkg cache layer
+# This makes vcpkg available to subsequent buildpacks as well
+vcpkg_toml_file=${layers_dir}/vcpkg.toml
+vcpkg_dir=${layers_dir}/vcpkg
+vcpkg_env_dir=${vcpkg_dir}/env
+
+# cache indicators
+stack_file=${vcpkg_dir}/stack
+vcpkg_json_file=${vcpkg_dir}/vcpkg.json
+
+if [[ -f "${stack_file}" ]] && [[ "$(cat "${stack_file}")" == "${CNB_STACK_ID}" ]]; then
+  log "stack and vcpkg version did not change -> using cached version of vcpkg."
+else
+  log "stack id did not match, recreating the layer"
+  rm -rf "${vcpkg_dir}"
+  mkdir "${vcpkg_dir}"
+  # install vcpkg
+  git clone $vcpkg_url "$vcpkg_dir"
+  "$vcpkg_dir"/bootstrap-vcpkg.sh
+  mkdir "${vcpkg_env_dir}"
+
+  # set the cache indicators
+  echo "${CNB_STACK_ID}" > "${stack_file}"
+fi
+
+if [[ -f ${vcpkg_json_file} ]] && cmp -s vcpkg.json "${vcpkg_json_file}"; then
+  log "vcpkg.json did not change -> using cached version."
+else
+  log "installing dependencies from vcpkg.json"
+  "${vcpkg_dir}"/vcpkg install --triplet=x64-linux-dynamic --x-install-root="${vcpkg_dir}"/installed
+  cp vcpkg.json "${vcpkg_json_file}"
+fi
+
+# Set the VCPKG_DYNAMIC_LIB environment variable
+export VCPKG_DYNAMIC_LIB=${vcpkg_dir}/installed/x64-linux-dynamic/lib
+echo -n "$VCPKG_DYNAMIC_LIB" > "$vcpkg_env_dir"/VCPKG_DYNAMIC_LIB
+log "VCPKG_DYNAMIC_LIB set to: $VCPKG_DYNAMIC_LIB"
+
+# write layer toml
+cat >> "${vcpkg_toml_file}" <<EOL
+[types]
+launch = true
+build = true
+cache = true
+EOL
