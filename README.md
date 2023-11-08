@@ -54,3 +54,6 @@ public void init() {
     System.setProperty("jna.library.path", System.getenv("VCPKG_DYNAMIC_LIB"));
 }
 ```
+
+## Licence 
+MIT
